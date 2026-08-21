@@ -475,6 +475,10 @@ namespace crypto {
       X509V3_EXT_conf_nid(nullptr, &extension_context, NID_basic_constraints, (char *) "critical,CA:TRUE")
     };
     X509_add_ext(x509.get(), basic_constraints.get(), -1);
+    x509_extension_t subject_alt_name {
+      X509V3_EXT_conf_nid(nullptr, &extension_context, NID_subject_alt_name, (char *) "IP:127.0.0.1,DNS:localhost")
+    };
+    X509_add_ext(x509.get(), subject_alt_name.get(), -1);
 
     X509_sign(x509.get(), pkey.get(), EVP_sha256());
 
