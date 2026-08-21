@@ -178,6 +178,13 @@ protected:
       // If not authenticated, authenticate() already sent the response
     };
 
+    server->resource["^/api/openbot/displays$"]["GET"] = [](
+                                                               const std::shared_ptr<SimpleWeb::ServerBase<SimpleWeb::HTTPS>::Response> &response,
+                                                               const std::shared_ptr<SimpleWeb::ServerBase<SimpleWeb::HTTPS>::Request> &request
+                                                             ) {
+      confighttp::getOpenBotDisplays(response, request);
+    };
+
     // Add a route to test send_unauthorized
     server->resource["^/unauthorized-test$"]["GET"] = [](
                                                         const std::shared_ptr<SimpleWeb::ServerBase<SimpleWeb::HTTPS>::Response> &response,
@@ -403,6 +410,22 @@ TEST_F(ConfigHttpTest, AuthenticateAcceptsValidCredentials) {
 
   const std::string body = response->content.string();
   ASSERT_EQ(body, "authenticated");
+}
+
+TEST_F(ConfigHttpTest, OpenBotDisplaysRejectsNoAuth) {
+  const auto response = client->request("GET", "/api/openbot/displays");
+  ASSERT_EQ(response->status_code, "401 Unauthorized");
+}
+
+TEST_F(ConfigHttpTest, OpenBotDisplaysReturnsAnArray) {
+  SimpleWeb::CaseInsensitiveMultimap headers;
+  headers.emplace("Authorization", create_auth_header("testuser", "testpass"));
+
+  const auto response = client->request("GET", "/api/openbot/displays", "", headers);
+  ASSERT_EQ(response->status_code, "200 OK");
+  const auto body = nlohmann::json::parse(response->content.string());
+  ASSERT_TRUE(body.contains("displays"));
+  ASSERT_TRUE(body["displays"].is_array());
 }
 
 // Test: confighttp::authenticate() rejects invalid password
