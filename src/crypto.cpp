@@ -5,12 +5,14 @@
 // lib includes
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+#include <openssl/x509v3.h>
 
 // local includes
 #include "crypto.h"
 
 namespace crypto {
   using asn1_string_t = util::safe_ptr<ASN1_STRING, ASN1_STRING_free>;
+  using x509_extension_t = util::safe_ptr<X509_EXTENSION, X509_EXTENSION_free>;
 
   cert_chain_t::cert_chain_t():
       _certs {},
@@ -465,6 +467,15 @@ namespace crypto {
     X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const std::uint8_t *) cn.data(), (int) cn.size(), -1, 0);
 
     X509_set_issuer_name(x509.get(), name);
+
+    X509V3_CTX extension_context {};
+    X509V3_set_ctx_nodb(&extension_context);
+    X509V3_set_ctx(&extension_context, x509.get(), x509.get(), nullptr, nullptr, 0);
+    x509_extension_t basic_constraints {
+      X509V3_EXT_conf_nid(nullptr, &extension_context, NID_basic_constraints, (char *) "critical,CA:TRUE")
+    };
+    X509_add_ext(x509.get(), basic_constraints.get(), -1);
+
     X509_sign(x509.get(), pkey.get(), EVP_sha256());
 
     return {pem(x509), pem(pkey)};
