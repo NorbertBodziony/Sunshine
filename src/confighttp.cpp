@@ -1357,6 +1357,30 @@ namespace confighttp {
   }
 
   /**
+   * @brief Return native output names accepted by Sunshine's output_name setting.
+   * @param response The HTTP response object.
+   * @param request The HTTP request object.
+   */
+  void getOpenBotDisplays(const resp_https_t &response, const req_https_t &request) {
+    if (!authenticate(response, request)) {
+      return;
+    }
+
+    print_req(request);
+
+    nlohmann::json output_tree;
+    output_tree["displays"] = nlohmann::json::array();
+    const auto display_names = platf::display_names(platf::mem_type_e::system);
+    for (const auto &display_name : display_names) {
+      output_tree["displays"].push_back({
+        {"id", display_name},
+        {"name", display_name},
+      });
+    }
+    send_response(response, output_tree);
+  }
+
+  /**
    * @brief Reset the display device persistence.
    * @param response The HTTP response object.
    * @param request The HTTP request object.
@@ -1780,6 +1804,7 @@ namespace confighttp {
     server.resource["^/api/password$"]["POST"] = savePassword;
     server.resource["^/api/pin$"]["POST"] = savePin;
     server.resource["^/api/logs$"]["GET"] = getLogs;
+    server.resource["^/api/openbot/displays$"]["GET"] = getOpenBotDisplays;
     server.resource["^/api/reset-display-device-persistence$"]["POST"] = resetDisplayDevicePersistence;
     server.resource["^/api/restart$"]["POST"] = restart;
     server.resource["^/api/vigembus/status$"]["GET"] = getViGEmBusStatus;
