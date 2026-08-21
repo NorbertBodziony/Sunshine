@@ -61,6 +61,19 @@ jobs:
             mingw-w64-ucrt-x86_64-opus
             mingw-w64-ucrt-x86_64-toolchain
 
+      - name: Set up Windows Node.js
+        if: matrix.platform == 'windows'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+
+      - name: Export Windows Node.js path
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $nodeDirectory = Split-Path -Path (Get-Command node).Source -Parent
+          "NODEJS_PATH=$nodeDirectory" >> $env:GITHUB_ENV
+
       - name: Configure and build macOS
         if: matrix.platform == 'macos'
         run: |
@@ -79,6 +92,8 @@ jobs:
         if: matrix.platform == 'windows'
         shell: msys2 {0}
         run: |
+          NODEJS_PATH="$(cygpath "$NODEJS_PATH")"
+          export PATH="$PATH:$NODEJS_PATH"
           cmake -S . -B build-openbot-ci -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_DOCS=OFF \
